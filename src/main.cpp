@@ -1,3 +1,10 @@
+
+//   mkdir build && cd build to create and enter the build directory
+//   cmake .. && make to compile your project
+//  ./path_planning to run your code
+
+
+
 #include <uWS/uWS.h>
 #include <fstream>
 #include <iostream>
