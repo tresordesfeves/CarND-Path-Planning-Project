@@ -99,16 +99,21 @@ int main() {
 
           vector<double> next_x_vals;
           vector<double> next_y_vals;
-
-          /**
-           * TODO: define a path made up of (x,y) points that the car will visit
-           *   sequentially every .02 seconds
-           */
+//**********
+          //* TODO(1): define a path made up of (x,y) points that the car will visit
+          double next_s, next_d;
           double dist_inc = 0.5;
-          for (int i = 0; i < 50; ++i) {
-            next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
-            next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
-          }
+          for (int i = 0; i < 50; ++i) 
+            {
+              next_s= car_s*(i+1);
+              next_d= car_d+6;
+
+              car_x, car_y = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x,map_waypoints_y);
+                              
+              next_x_vals.push_back(car_x);
+              next_y_vals.push_back(car_y);
+            }
+           //* END(1)                              
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
