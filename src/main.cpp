@@ -102,7 +102,7 @@ int main() {
 //**********
           //* TODO(1): define a path made up of (x,y) points that the car will visit
           double next_s, next_d;
-          double dist_inc = 0.5;
+          double dist_inc = 0.49;
           vector<double>car_XY;
           for (int i = 0; i < 50; ++i) 
             {
