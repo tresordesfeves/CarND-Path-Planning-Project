@@ -107,7 +107,7 @@ int main() {
           for (int i = 0; i < 50; ++i) 
             {
               next_s= car_s+((i+1)*dist_inc);
-              next_d= car_d+6;
+              next_d= 6;
               car_XY=getXY(next_s,next_d,map_waypoints_s,map_waypoints_x,map_waypoints_y);
               next_x_vals.push_back(car_XY[0]);
               next_y_vals.push_back(car_XY[1]);
