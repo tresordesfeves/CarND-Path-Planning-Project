@@ -139,9 +139,8 @@ double ref_vel_mph = 49.5;  /*
 
         // done picking the two first base points for the Spline:
 
-//******** using 3 way points ahead 30 meters apart to anchor a Spine base discretization 
-// ref_x, ref_y, ref_yaw????
-
+          // create  3 way points ahead 30 meters apart to anchor a Spline base discretization 
+          // ref_x, ref_y, ref_yaw????
 
               double spacer = 30; //space between each spline base points in Frenet coordinates
               int sparsed_base_points=3;  // number of sparsed base waypoints
@@ -151,6 +150,22 @@ double ref_vel_mph = 49.5;  /*
                   base_WP_x.push_back (getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y)[0]);
                   base_WP_y.push_back (getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y)[1]);
                 }
+
+        // transform all 5 basepoints from map space coordinates to car space coordinates
+
+              double shift_car_x,shift_car_y;     
+
+              for(int i=0; i<base_WP_x.size();i++)
+                {
+                  // translation to car centered origin
+                  shift_car_x= base_WP_x[i]- car_x;
+                  shift_car_y= base_WP_x[i]- car_y;   
+
+                  // rotation of the axis to match the car direction 
+                  base_WP_x= (shift_car_x* cos(car_yaw))+ (shift_car_y*sin(car_yaw));
+                  base_WP_x= (-shift_car_x* sin(car_yaw))+ (shift_car_y*cos(car_yaw));  
+                }
+
 //**********
           //* TODO(1): define a path made up of (x,y) points that the car will visit
           double next_s, next_d;
