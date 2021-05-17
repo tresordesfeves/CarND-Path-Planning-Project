@@ -95,15 +95,14 @@ double ref_vel_mph = 49.5;  /*
           double car_speed = j[1]["speed"];
 
           // Previous path data given to the Planner
-          auto previous_path_x = j[1]["previous_path_x"];
-          auto previous_path_y = j[1]["previous_path_y"];
+          auto previous_path_x = j[1]["previous_path_x"];// points are removed from these paths as
+          auto previous_path_y = j[1]["previous_path_y"];// the car drive on them ( similar to a FIFO list)
           // Previous path's end s and d values 
           double end_path_s = j[1]["end_path_s"];
           double end_path_d = j[1]["end_path_d"];
           
-
-          int remaining_path_ahead_size =previous_path_x.size(); /* remaining waypoints ahead since generating the last batch
-                                                        ie  waypoints not driven on yet */
+          /* number remaining waypoints ahead since generating the last batch (waypoints still ahead of the cars) */
+          int remaining_path_ahead_size =previous_path_x.size(); 
 
           // Sensor Fusion Data, a list of all other cars on the same side 
           //   of the road.
@@ -111,37 +110,38 @@ double ref_vel_mph = 49.5;  /*
 
           json msgJson;
 
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
 
-           /*
-           Discrete waypoints will be generated using a Spline interpolation based on these 5 points
-           */
+          //next_x_vals, next_y_vals : vectors of points that will sent to the simulator to drive on (trajectory ahead )
+          
+          vector<double> next_x_vals=previous_path_x;// points not used yet from last calculated trajectory are 
+          vector<double> next_y_vals=previous_path_y;// "recycled " into the next waypoint batch 
+
+           
+
+        // craft 5 base points to build a Spline interpolation ahead of the car
+           
+          // vectors of points to base the Spline on: 
           vector<double> base_WP_x; 
           vector<double> base_WP_y;
 
 
-          double ref_x,ref_y,ref_yaw /* origin and orientation of a coordinate space centered:
-                                      - either on the last previous point ( when the tarjectory is not starting)
-                                      - or on the car itself ( trajectory starting, no previous points)
-                                      and oriented :
-                                      - either like  the last 2 points 
-                                      - or like the car
-                                      */
+          double ref_x,ref_y // reference point to add to the vector of 5 base point. Also origin of a local coordinate system
+          double ref_yaw //  orientaton of the the local coordinate system 
+
 
         // picking the two first base points for the Spline:
 
           if remaining_path_ahead_size<2 
-            { // only one or no waypoint remaining from the previous path :
-              base_WP_x.push_back(car_x-cos(deg2rad(car_yaw)));// creating a new base point behind the car and tangent to the car angle
-              base_WP_y.push_back(car_y-cos(deg2rad(car_yaw)));// creating a new base point behind the car and tangent to the car angle
-              base_WP_x.push_back(car_x);//pick the car for second base point 
-              base_WP_y.push_back(car_y);//pick the car for second base point 
+            { // not enough waypoints remaining ahead ( minimum needed 2 ) , the car is then used as reference  :
 
-              // for later use to switch to space referential centered on ego car 
               ref_x= car_x; 
               ref_y=car_y;
               ref_yaw= car_yaw;
+  
+              base_WP_x.push_back(ref_x-cos(deg2rad(ref_yaw)));// creating a new base point behind the car and tangent to the car angle
+              base_WP_y.push_back(ref_y-cos(deg2rad(ref_yaw)));// creating a new base point behind the car and tangent to the car angle
+              base_WP_x.push_back(ref_x);//pick the car for second base point 
+              base_WP_y.push_back(ref_y);//pick the car for second base point 
               
             }
           else 
@@ -152,10 +152,9 @@ double ref_vel_mph = 49.5;  /*
               base_WP_y.push_back(previous_path_y[remaining_path_ahead_size-1]);
 
 
-              // for later use to switch to space referential centered on last previius point, and last 2 points direction
+              // for later use to switch to space referential centered on last previous point, and last 2 points direction
               ref_x= previous_path_x[remaining_path_ahead_size-1];
               ref_y= previous_path_y[remaining_path_ahead_size-1];
-              
               ref_yaw= atan2(previous_path_y[remaining_path_ahead_size-2]-ref_y,previous_path_x[remaining_path_ahead_size-2]-ref_x);
 
             }
@@ -164,7 +163,6 @@ double ref_vel_mph = 49.5;  /*
 
           // create  3 way points ahead 30 meters apart to anchor a Spline base discretization 
           
-          // ref_x, ref_y, ref_yaw????
 
               double spacer = 30; //space between each spline base points in Frenet coordinates
               int sparsed_base_points=3;  // number of sparsed base waypoints
@@ -187,8 +185,15 @@ double ref_vel_mph = 49.5;  /*
 
                   // rotation of the axis to match the car or last 2 points direction 
                   base_WP_x= (shift_ref_x* cos(ref_yaw))+ (shift_ref_y*sin(ref_yaw));
-                  base_WP_x= (-shift_ref_x* sin(ref_yaw))+ (shift_ref_y*cos(ref_yaw));  
+                  base_WP_y= (-shift_ref_x* sin(ref_yaw))+ (shift_ref_y*cos(ref_yaw));  
                 }
+
+        // create a Spline ftom these 5 basepoints 
+
+                tk::spline s;
+                s.set_points(base_WP_x,sparsed_base_points);
+
+
 
 // to do the spline : on video youtube: https://youtu.be/7sI3VHFPP0w?t=1763
 
