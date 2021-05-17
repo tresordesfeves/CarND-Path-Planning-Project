@@ -14,6 +14,8 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "helpers.h"
 #include "json.hpp"
+#include "spline.h"
+
 
 // for convenience
 using nlohmann::json;
@@ -57,8 +59,16 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
-  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
-               &map_waypoints_dx,&map_waypoints_dy]
+int lane =1; //ego car's lane : waypoints will be added ahead on this lane
+
+double ref_vel_mph = 49.5;  /*
+                          the ego vehicle velocity : 
+                          the car moves from one waypoint to the nextone at fixed time intervals (0.02 s) therefore
+                          the spacing of the way points to generate is conditioned by this velocity
+                          */
+
+  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s, // passing the extrinsic parameters (map)
+               &map_waypoints_dx,&map_waypoints_dy,&lane, &ref_vel_mph]// passing the ego vehicle intrinsic parameters( velocity ,lane)
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -90,6 +100,10 @@ int main() {
           // Previous path's end s and d values 
           double end_path_s = j[1]["end_path_s"];
           double end_path_d = j[1]["end_path_d"];
+          
+
+          int remaining_path_ahead_size =previous_path_x.size(); /* remaining waypoints ahead since generating the last batch
+                                                        ie  waypoints not driven on yet */
 
           // Sensor Fusion Data, a list of all other cars on the same side 
           //   of the road.
@@ -99,15 +113,55 @@ int main() {
 
           vector<double> next_x_vals;
           vector<double> next_y_vals;
+
+           /*
+           Discrete waypoints will be generated using a Spline interpolation based on these 5 points
+           */
+          vector<double> base_WP_x; 
+          vector<double> base_WP_y;
+
+        // picking the two first base points for the Spline:
+
+          if remaining_path_ahead_size<2 
+            { // only one or no waypoint remaining from the previous path :
+              base_WP_x.push_back(car_x-cos(deg2rad(car_yaw)));// creating a new base point behind the car and tangent to the car angle
+              base_WP_y.push_back(car_y-cos(deg2rad(car_yaw)));// creating a new base point behind the car and tangent to the car angle
+              base_WP_x.push_back(car_x);//pick the car for second base point 
+              base_WP_y.push_back(car_y);//pick the car for second base point 
+            }
+          else 
+            { // use the last two remaining waypoints from previous_path
+              base_WP_x.push_back(previous_path_x[remaining_path_ahead_size-2]);
+              base_WP_y.push_back(previous_path_y[remaining_path_ahead_size-2]);
+              base_WP_x.push_back(previous_path_x[remaining_path_ahead_size-1]);
+              base_WP_y.push_back(previous_path_y[remaining_path_ahead_size-1]);
+            }
+
+        // done picking the two first base points for the Spline:
+
+//******** using 3 way points ahead 30 meters apart to anchor a Spine base discretization 
+// ref_x, ref_y, ref_yaw????
+
+
+              double spacer = 30; //space between each spline base points in Frenet coordinates
+              int sparsed_base_points=3;  // number of sparsed base waypoints
+              
+              for(int i=1; i<=sparsed_base_points;i++)
+                {
+                  base_WP_x.push_back (getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y)[0]);
+                  base_WP_y.push_back (getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y)[1]);
+                }
 //**********
           //* TODO(1): define a path made up of (x,y) points that the car will visit
           double next_s, next_d;
           double dist_inc = 0.49;
           vector<double>car_XY;
+
+
           for (int i = 0; i < 50; ++i) 
             {
-              next_s= car_s+((i+1)*dist_inc);
-              next_d= 6;
+              next_s= car_s+((i+1)*dist_inc); // longitudinal distance along the s axis 
+              next_d= 6;// car is centered on lane 1 (3 lanes, from left to right: L0,L1,l2, lane width = 4 )
               car_XY=getXY(next_s,next_d,map_waypoints_s,map_waypoints_x,map_waypoints_y);
               next_x_vals.push_back(car_XY[0]);
               next_y_vals.push_back(car_XY[1]);
