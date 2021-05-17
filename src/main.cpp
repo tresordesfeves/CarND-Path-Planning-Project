@@ -120,6 +120,15 @@ double ref_vel_mph = 49.5;  /*
           vector<double> base_WP_x; 
           vector<double> base_WP_y;
 
+
+          double ref_x,ref_y,ref_yaw /* origin and orientation of a coordinate space centered:
+                                      - either on the last previous point ( when the tarjectory is not starting)
+                                      - or on the car itself ( trajectory starting, no previous points)
+                                      and oriented :
+                                      - either like  the last 2 points 
+                                      - or like the car
+                                      */
+
         // picking the two first base points for the Spline:
 
           if remaining_path_ahead_size<2 
@@ -128,6 +137,12 @@ double ref_vel_mph = 49.5;  /*
               base_WP_y.push_back(car_y-cos(deg2rad(car_yaw)));// creating a new base point behind the car and tangent to the car angle
               base_WP_x.push_back(car_x);//pick the car for second base point 
               base_WP_y.push_back(car_y);//pick the car for second base point 
+
+              // for later use to switch to space referential centered on ego car 
+              ref_x= car_x; 
+              ref_y=car_y;
+              ref_yaw= car_yaw;
+              
             }
           else 
             { // use the last two remaining waypoints from previous_path
@@ -135,11 +150,20 @@ double ref_vel_mph = 49.5;  /*
               base_WP_y.push_back(previous_path_y[remaining_path_ahead_size-2]);
               base_WP_x.push_back(previous_path_x[remaining_path_ahead_size-1]);
               base_WP_y.push_back(previous_path_y[remaining_path_ahead_size-1]);
+
+
+              // for later use to switch to space referential centered on last previius point, and last 2 points direction
+              ref_x= previous_path_x[remaining_path_ahead_size-1];
+              ref_y= previous_path_y[remaining_path_ahead_size-1];
+              
+              ref_yaw= atan2(previous_path_y[remaining_path_ahead_size-2]-ref_y,previous_path_x[remaining_path_ahead_size-2]-ref_x);
+
             }
 
         // done picking the two first base points for the Spline:
 
           // create  3 way points ahead 30 meters apart to anchor a Spline base discretization 
+          
           // ref_x, ref_y, ref_yaw????
 
               double spacer = 30; //space between each spline base points in Frenet coordinates
@@ -151,20 +175,24 @@ double ref_vel_mph = 49.5;  /*
                   base_WP_y.push_back (getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y)[1]);
                 }
 
-        // transform all 5 basepoints from map space coordinates to car space coordinates
+        // transform all 5 basepoints from map space coordinates to car space coordinates (or the last point of the previous path )
 
-              double shift_car_x,shift_car_y;     
+              double shift_ref_x,shift_ref_y;     
 
               for(int i=0; i<base_WP_x.size();i++)
                 {
-                  // translation to car centered origin
-                  shift_car_x= base_WP_x[i]- car_x;
-                  shift_car_y= base_WP_x[i]- car_y;   
+                  // translation to reference  origin (car or last previous point )
+                  shift_ref_x= base_WP_x[i]- ref_x;
+                  shift_ref_y= base_WP_x[i]- ref_y;   
 
-                  // rotation of the axis to match the car direction 
-                  base_WP_x= (shift_car_x* cos(car_yaw))+ (shift_car_y*sin(car_yaw));
-                  base_WP_x= (-shift_car_x* sin(car_yaw))+ (shift_car_y*cos(car_yaw));  
+                  // rotation of the axis to match the car or last 2 points direction 
+                  base_WP_x= (shift_ref_x* cos(ref_yaw))+ (shift_ref_y*sin(ref_yaw));
+                  base_WP_x= (-shift_ref_x* sin(ref_yaw))+ (shift_ref_y*cos(ref_yaw));  
                 }
+
+// to do the spline : on video youtube: https://youtu.be/7sI3VHFPP0w?t=1763
+
+
 
 //**********
           //* TODO(1): define a path made up of (x,y) points that the car will visit
