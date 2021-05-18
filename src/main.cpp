@@ -125,13 +125,13 @@ double ref_vel_mph = 49.5;  /*
           vector<double> base_WP_y;
 
 
-          double ref_x,ref_y // reference point to add to the vector of 5 base point. Also origin of a local coordinate system
-          double ref_yaw //  orientaton of the the local coordinate system 
+          double ref_x,ref_y; // reference point to add to the vector of 5 base point. Also origin of a local coordinate system
+          double ref_yaw; //  orientaton of the the local coordinate system 
 
 
         // picking the two first base points for the Spline:
 
-          if remaining_path_ahead_size<2 
+          if (remaining_path_ahead_size<2) 
             { // not enough waypoints remaining ahead ( minimum needed 2 ) , the car is then used as reference  :
 
               ref_x= car_x; 
