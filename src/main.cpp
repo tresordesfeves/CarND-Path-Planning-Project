@@ -141,7 +141,7 @@ double ref_vel_mph = 49.5;  /*
               ref_yaw= car_yaw;
   
               base_WP_x.push_back(ref_x-cos(deg2rad(ref_yaw)));// creating a new base point behind the car and tangent to the car angle
-              base_WP_y.push_back(ref_y-cos(deg2rad(ref_yaw)));// creating a new base point behind the car and tangent to the car angle
+              base_WP_y.push_back(ref_y-sin(deg2rad(ref_yaw)));// creating a new base point behind the car and tangent to the car angle
               base_WP_x.push_back(ref_x);//pick the car for second base point 
               base_WP_y.push_back(ref_y);//pick the car for second base point 
               
