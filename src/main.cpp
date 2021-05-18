@@ -156,14 +156,12 @@ double ref_vel_mph = 49.5;  /*
               ref_x= previous_path_x[remaining_path_ahead_size-1];
               ref_y= previous_path_y[remaining_path_ahead_size-1];
               ref_yaw= atan2(previous_path_y[remaining_path_ahead_size-2]-ref_y,previous_path_x[remaining_path_ahead_size-2]-ref_x);
-
             }
 
-        // done picking the two first base points for the Spline:
+        // done picking the two first base points for the Spline
 
           // create  3 way points ahead 30 meters apart to anchor a Spline base discretization 
           
-
               double spacer = 30; //space between each spline base points in Frenet coordinates
               int sparsed_base_points=3;  // number of sparsed base waypoints
               
@@ -177,44 +175,49 @@ double ref_vel_mph = 49.5;  /*
 
               double shift_ref_x,shift_ref_y;     
 
-              for(int i=0; i<base_WP_x.size();i++)
+              for(int i=0; i<base_WP_x.size();i++)// transform each base point from global  to local coordinates (ref)
                 {
                   // translation to reference  origin (car or last previous point )
                   shift_ref_x= base_WP_x[i]- ref_x;
                   shift_ref_y= base_WP_x[i]- ref_y;   
 
                   // rotation of the axis to match the car or last 2 points direction 
-                  base_WP_x= (shift_ref_x* cos(ref_yaw))+ (shift_ref_y*sin(ref_yaw));
-                  base_WP_y= (-shift_ref_x* sin(ref_yaw))+ (shift_ref_y*cos(ref_yaw));  
+                  base_WP_x[i]= (shift_ref_x* cos(ref_yaw))+ (shift_ref_y*sin(ref_yaw));
+                  base_WP_y[i]= (-shift_ref_x* sin(ref_yaw))+ (shift_ref_y*cos(ref_yaw));  
                 }
 
-        // create a Spline ftom these 5 basepoints 
+        // create a Spline from these 5 basepoints 
 
                 tk::spline s;
-                s.set_points(base_WP_x,sparsed_base_points);
+                s.set_points(base_WP_x,base_WP_y);
 
+       
+        /* 
+        calculate the number (ratio) of trajectory segments to drive a given distance at a given speed along the Spline.
+        Hypothesis : 
+        - the car moves from one waypoint to the next in 0.02 seconds
+        - the distance in the local space (d_local) has to be converted (approximation) to a distance along the Spline (d_Spline)
+        */       
+              double ref_vel_mps= ref_vel_mph/2.24; // convert velocity to meter per second
+              double d_local=30;
+              double d_Spline=dist(0,0,d_local,s(d_local));
+              double n =d_Spline/(0.02*ref_vel_mps); // ratio of trajectory segments 
 
+              double x_i_ref, y_i_ref // new way points in the car coordinate ( need to be transformed in global coordinates)
+              double x_i_global, y_i_global; 
+              for(int i=1; i<50-remaining_path_ahead_size;i++)
+                {
+                  x_i_ref=i*d_local/n;
+                  y_i_ref=s(x_i_ref); // here is the reason the coordinates were transformed to local: to use the Spline along the local x_axis
+                  x_i_global= (x_i_ref*cos(ref_yaw))- y_i_ref*sin(ref_yaw)+x_i_ref;// back to global coordinates
+                  y_i_global= (x_i_ref*sin(ref_yaw))+ y_i_ref*cos(ref_yaw)+y_i_ref;// back to global coordinates
+
+                  // add these points to next_x_vals to top the trajectory up to 50 points ahead 
+                  next_x_vals.push_back(x_i_global);
+                  next_y_vals.push_back(y_i_global);
+                }
 
 // to do the spline : on video youtube: https://youtu.be/7sI3VHFPP0w?t=1763
-
-
-
-//**********
-          //* TODO(1): define a path made up of (x,y) points that the car will visit
-          double next_s, next_d;
-          double dist_inc = 0.49;
-          vector<double>car_XY;
-
-
-          for (int i = 0; i < 50; ++i) 
-            {
-              next_s= car_s+((i+1)*dist_inc); // longitudinal distance along the s axis 
-              next_d= 6;// car is centered on lane 1 (3 lanes, from left to right: L0,L1,l2, lane width = 4 )
-              car_XY=getXY(next_s,next_d,map_waypoints_s,map_waypoints_x,map_waypoints_y);
-              next_x_vals.push_back(car_XY[0]);
-              next_y_vals.push_back(car_XY[1]);
-            }
-           //* END(1)                              
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
