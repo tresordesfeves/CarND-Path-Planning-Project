@@ -10,6 +10,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <math.h> 
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "helpers.h"
@@ -126,6 +127,7 @@ double ref_vel_mph = 49.5;  /*
 
 
           double ref_x,ref_y; // reference point to add to the vector of 5 base point. Also origin of a local coordinate system
+          double ref_x_prev,ref_y_prev ; // point just before the reference point
           double ref_yaw; //  orientaton of the the local coordinate system 
 
 
@@ -155,7 +157,11 @@ double ref_vel_mph = 49.5;  /*
               // for later use to switch to space referential centered on last previous point, and last 2 points direction
               ref_x= previous_path_x[remaining_path_ahead_size-1];
               ref_y= previous_path_y[remaining_path_ahead_size-1];
-              ref_yaw= atan2(previous_path_y[remaining_path_ahead_size-2]-ref_y,previous_path_x[remaining_path_ahead_size-2]-ref_x);
+              ref_x_prev= previous_path_x[remaining_path_ahead_size-2];
+              ref_y_prev= previous_path_y[remaining_path_ahead_size-2];
+
+
+              ref_yaw= atan2(ref_y_prev-ref_y,ref_x_prev-ref_x);
             }
 
         // done picking the two first base points for the Spline
@@ -203,7 +209,7 @@ double ref_vel_mph = 49.5;  /*
               double d_Spline=dist(0,0,d_local,s(d_local));
               double n =d_Spline/(0.02*ref_vel_mps); // ratio of trajectory segments 
 
-              double x_i_ref, y_i_ref // new way points in the car coordinate ( need to be transformed in global coordinates)
+              double x_i_ref, y_i_ref; // new way points in the car coordinate ( need to be transformed in global coordinates)
               double x_i_global, y_i_global; 
               for(int i=1; i<50-remaining_path_ahead_size;i++)
                 {
