@@ -170,7 +170,7 @@ double ref_vel_mph = 49.5;  /*
           
               double spacer = 30; //space between each spline base points in Frenet coordinates
               int sparsed_base_points=3;  // number of sparsed base waypoints
-              
+              double x_i, y_i
               for(int i=1; i<=sparsed_base_points;i++)
                 {
                   base_WP_x.push_back (getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y)[0]);
@@ -185,7 +185,7 @@ double ref_vel_mph = 49.5;  /*
                 {
                   // translation to reference  origin (car or last previous point )
                   shift_ref_x= base_WP_x[i]- ref_x;
-                  shift_ref_y= base_WP_x[i]- ref_y;   
+                  shift_ref_y= base_WP_y[i]- ref_y;   
 
                   // rotation of the axis to match the car or last 2 points direction 
                   base_WP_x[i]= (shift_ref_x* cos(ref_yaw))+ (shift_ref_y*sin(ref_yaw));
