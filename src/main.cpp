@@ -68,8 +68,8 @@ double ref_vel_mph = 49.5;  /*
                           the spacing of the way points to generate is conditioned by this velocity
                           */
 
-  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s, // passing the extrinsic parameters (map)
-               &map_waypoints_dx,&map_waypoints_dy,&lane, &ref_vel_mph]// passing the ego vehicle intrinsic parameters( velocity ,lane)
+  h.onMessage([&ref_vel_mph,&map_waypoints_x,&map_waypoints_y,&map_waypoints_s, // passing the extrinsic parameters (map)
+               &map_waypoints_dx,&map_waypoints_dy,&lane]// passing the ego vehicle intrinsic parameters( velocity ,lane)
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -138,10 +138,10 @@ double ref_vel_mph = 49.5;  /*
 
               ref_x= car_x; 
               ref_y=car_y;
-              ref_yaw= car_yaw;
+              ref_yaw= deg2rad(car_yaw);
   
-              base_WP_x.push_back(ref_x-cos(deg2rad(ref_yaw)));// creating a new base point behind the car and tangent to the car angle
-              base_WP_y.push_back(ref_y-sin(deg2rad(ref_yaw)));// creating a new base point behind the car and tangent to the car angle
+              base_WP_x.push_back(ref_x-cos(ref_yaw));// creating a new base point behind the car and tangent to the car angle
+              base_WP_y.push_back(ref_y-sin(ref_yaw));// creating a new base point behind the car and tangent to the car angle
               base_WP_x.push_back(ref_x);//pick the car for second base point 
               base_WP_y.push_back(ref_y);//pick the car for second base point 
               
@@ -170,11 +170,10 @@ double ref_vel_mph = 49.5;  /*
           
               double spacer = 30; //space between each spline base points in Frenet coordinates
               int sparsed_base_points=3;  // number of sparsed base waypoints
-              double x_i, y_i
               for(int i=1; i<=sparsed_base_points;i++)
                 {
-                  base_WP_x.push_back (getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y)[0]);
-                  base_WP_y.push_back (getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y)[1]);
+                  base_WP_x.push_back ((getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y))[0]);
+                  base_WP_y.push_back ((getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y))[1]);
                 }
 
         // transform all 5 basepoints from map space coordinates to car space coordinates (or the last point of the previous path )
