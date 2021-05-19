@@ -62,13 +62,13 @@ int main() {
 
 int lane =1; //ego car's lane : waypoints will be added ahead on this lane
 
-double ref_vel_mph = 49.5;  /*
+double ref_vel = 49.5;  /*(in mph)
                           the ego vehicle velocity : 
                           the car moves from one waypoint to the nextone at fixed time intervals (0.02 s) therefore
                           the spacing of the way points to generate is conditioned by this velocity
                           */
 
-  h.onMessage([&ref_vel_mph,&map_waypoints_x,&map_waypoints_y,&map_waypoints_s, // passing the extrinsic parameters (map)
+  h.onMessage([&ref_vel,&map_waypoints_x,&map_waypoints_y,&map_waypoints_s, // passing the extrinsic parameters (map)
                &map_waypoints_dx,&map_waypoints_dy,&lane]// passing the ego vehicle intrinsic parameters( velocity ,lane)
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
@@ -121,9 +121,9 @@ double ref_vel_mph = 49.5;  /*
 
         // craft 5 base points to build a Spline interpolation ahead of the car
            
-          // vectors of points to base the Spline on: 
-          vector<double> base_WP_x; 
-          vector<double> base_WP_y;
+          // list of base point to build a Spline  : 
+          vector<double>SPB_list_x; 
+          vector<double>SPB_list_y;
 
 
           double ref_x,ref_y; // reference point to add to the vector of 5 base point. Also origin of a local coordinate system
@@ -140,18 +140,18 @@ double ref_vel_mph = 49.5;  /*
               ref_y=car_y;
               ref_yaw= deg2rad(car_yaw);
   
-              base_WP_x.push_back(ref_x-cos(ref_yaw));// creating a new base point behind the car and tangent to the car angle
-              base_WP_y.push_back(ref_y-sin(ref_yaw));// creating a new base point behind the car and tangent to the car angle
-              base_WP_x.push_back(ref_x);//pick the car for second base point 
-              base_WP_y.push_back(ref_y);//pick the car for second base point 
+             SPB_list_x.push_back(ref_x-cos(ref_yaw));// creating a new base point behind the car and tangent to the car angle
+             SPB_list_y.push_back(ref_y-sin(ref_yaw));// creating a new base point behind the car and tangent to the car angle
+             SPB_list_x.push_back(ref_x);//pick the car location for second base point 
+             SPB_list_y.push_back(ref_y);//pick the car location for second base point 
               
             }
           else 
             { // use the last two remaining waypoints from previous_path
-              base_WP_x.push_back(previous_path_x[remaining_path_ahead_size-2]);
-              base_WP_y.push_back(previous_path_y[remaining_path_ahead_size-2]);
-              base_WP_x.push_back(previous_path_x[remaining_path_ahead_size-1]);
-              base_WP_y.push_back(previous_path_y[remaining_path_ahead_size-1]);
+             SPB_list_x.push_back(previous_path_x[remaining_path_ahead_size-2]);
+             SPB_list_y.push_back(previous_path_y[remaining_path_ahead_size-2]);
+             SPB_list_x.push_back(previous_path_x[remaining_path_ahead_size-1]);
+             SPB_list_y.push_back(previous_path_y[remaining_path_ahead_size-1]);
 
 
               // for later use to switch to space referential centered on last previous point, and last 2 points direction
@@ -161,7 +161,7 @@ double ref_vel_mph = 49.5;  /*
               ref_y_prev= previous_path_y[remaining_path_ahead_size-2];
 
 
-              ref_yaw= atan2(ref_y_prev-ref_y,ref_x_prev-ref_x);
+              ref_yaw= atan2(ref_y-ref_y_prev,ref_x-ref_x_prev);
             }
 
         // done picking the two first base points for the Spline
@@ -169,41 +169,46 @@ double ref_vel_mph = 49.5;  /*
           // create  3 way points ahead 30 meters apart to anchor a Spline base discretization 
           
               double spacer = 30; //space between each spline base points in Frenet coordinates
-              int sparsed_base_points=3;  // number of sparsed base waypoints
-              for(int i=1; i<=sparsed_base_points;i++)
+              int n_SBP=3;  // number of sparsed base waypoints
+              vector <double> SBP;// sparse basepoint 
+              double SBP_x, SBP_y ; //sbase points coordinates 
+
+              for(int i=1; i<=n_SBP;i++)
                 {
-                  base_WP_x.push_back ((getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y))[0]);
-                  base_WP_y.push_back ((getXY(car_s+(i*spacer),2+(4*lane),map_waypoints_s,map_waypoints_x,map_waypoints_y))[1]);
+                  SBP= getXY(car_s+(i*spacer), 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+                  SBP_x=SBP[0];
+                  SBP_y=SBP[1];
+                  SPB_list_x.push_back(SBP_x) ;
+                  SPB_list_y.push_back (SPB_y);
                 }
 
         // transform all 5 basepoints from map space coordinates to car space coordinates (or the last point of the previous path )
 
-              double shift_ref_x,shift_ref_y;     
+              double shift2_ref_x,shift2_ref_y;  //shift to car (or last_previous_path point ) referential  
 
-              for(int i=0; i<base_WP_x.size();i++)// transform each base point from global  to local coordinates (ref)
+              for(int i=0; i<SPB_list_x.size();i++)// transform each base point from global  to local coordinates (ref)
                 {
                   // translation to reference  origin (car or last previous point )
-                  shift_ref_x= base_WP_x[i]- ref_x;
-                  shift_ref_y= base_WP_y[i]- ref_y;   
+                  shift2_ref_x=SPB_list_x[i]- ref_x;
+                  shift2_ref_y=SPB_list_y[i]- ref_y;   
 
                   // rotation of the axis to match the car or last 2 points direction 
-                  base_WP_x[i]= (shift_ref_x* cos(ref_yaw))+ (shift_ref_y*sin(ref_yaw));
-                  base_WP_y[i]= (-shift_ref_x* sin(ref_yaw))+ (shift_ref_y*cos(ref_yaw));  
+                 SPB_list_x[i]= (shift2_ref_x* cos(ref_yaw))+ (shift2_ref_y*sin(ref_yaw));
+                 SPB_list_y[i]= (-shift2_ref_x* sin(ref_yaw))+ (shift2_ref_y*cos(ref_yaw));  
                 }
 
         // create a Spline from these 5 basepoints 
 
                 tk::spline s;
-                s.set_points(base_WP_x,base_WP_y);
-
-       
+                s.set_points(SPB_list_x,SPB_list_y);
+     
         /* 
         calculate the number (ratio) of trajectory segments to drive a given distance at a given speed along the Spline.
         Hypothesis : 
         - the car moves from one waypoint to the next in 0.02 seconds
         - the distance in the local space (d_local) has to be converted (approximation) to a distance along the Spline (d_Spline)
         */       
-              double ref_vel_mps= ref_vel_mph/2.24; // convert velocity to meter per second
+              double ref_vel_mps= ref_vel/2.24; // convert velocity to meter per second
               double d_local=30;
               double d_Spline=dist(0,0,d_local,s(d_local));
               double n =d_Spline/(0.02*ref_vel_mps); // ratio of trajectory segments 
@@ -214,8 +219,11 @@ double ref_vel_mph = 49.5;  /*
                 {
                   x_i_ref=i*d_local/n;
                   y_i_ref=s(x_i_ref); // here is the reason the coordinates were transformed to local: to use the Spline along the local x_axis
-                  x_i_global= (x_i_ref*cos(ref_yaw))- y_i_ref*sin(ref_yaw)+x_i_ref;// back to global coordinates
-                  y_i_global= (x_i_ref*sin(ref_yaw))+ y_i_ref*cos(ref_yaw)+y_i_ref;// back to global coordinates
+                  x_i_global= (x_i_ref*cos(ref_yaw))- y_i_ref*sin(ref_yaw);// back to global coordinates: rotation
+                  y_i_global= (x_i_ref*sin(ref_yaw))+ y_i_ref*cos(ref_yaw);// back to global coordinates: rotation
+
+                  x_i_global+=ref_x;//back to global coordinates: translation
+                  y_i_global+=ref_y;//back to global coordinates: translation
 
                   // add these points to next_x_vals to top the trajectory up to 50 points ahead 
                   next_x_vals.push_back(x_i_global);
