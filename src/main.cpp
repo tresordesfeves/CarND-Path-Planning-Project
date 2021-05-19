@@ -122,8 +122,8 @@ double ref_vel = 49.5;  /*(in mph)
         // craft 5 base points to build a Spline interpolation ahead of the car
            
           // list of base point to build a Spline  : 
-          vector<double>SPB_list_x; 
-          vector<double>SPB_list_y;
+          vector<double>SBP_list_x; 
+          vector<double>SBP_list_y;
 
 
           double ref_x,ref_y; // reference point to add to the vector of 5 base point. Also origin of a local coordinate system
@@ -140,18 +140,18 @@ double ref_vel = 49.5;  /*(in mph)
               ref_y=car_y;
               ref_yaw= deg2rad(car_yaw);
   
-             SPB_list_x.push_back(ref_x-cos(ref_yaw));// creating a new base point behind the car and tangent to the car angle
-             SPB_list_y.push_back(ref_y-sin(ref_yaw));// creating a new base point behind the car and tangent to the car angle
-             SPB_list_x.push_back(ref_x);//pick the car location for second base point 
-             SPB_list_y.push_back(ref_y);//pick the car location for second base point 
+             SBP_list_x.push_back(ref_x-cos(ref_yaw));// creating a new base point behind the car and tangent to the car angle
+             SBP_list_y.push_back(ref_y-sin(ref_yaw));// creating a new base point behind the car and tangent to the car angle
+             SBP_list_x.push_back(ref_x);//pick the car location for second base point 
+             SBP_list_y.push_back(ref_y);//pick the car location for second base point 
               
             }
           else 
             { // use the last two remaining waypoints from previous_path
-             SPB_list_x.push_back(previous_path_x[remaining_path_ahead_size-2]);
-             SPB_list_y.push_back(previous_path_y[remaining_path_ahead_size-2]);
-             SPB_list_x.push_back(previous_path_x[remaining_path_ahead_size-1]);
-             SPB_list_y.push_back(previous_path_y[remaining_path_ahead_size-1]);
+             SBP_list_x.push_back(previous_path_x[remaining_path_ahead_size-2]);
+             SBP_list_y.push_back(previous_path_y[remaining_path_ahead_size-2]);
+             SBP_list_x.push_back(previous_path_x[remaining_path_ahead_size-1]);
+             SBP_list_y.push_back(previous_path_y[remaining_path_ahead_size-1]);
 
 
               // for later use to switch to space referential centered on last previous point, and last 2 points direction
@@ -178,29 +178,29 @@ double ref_vel = 49.5;  /*(in mph)
                   SBP= getXY(car_s+(i*spacer), 2+(4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
                   SBP_x=SBP[0];
                   SBP_y=SBP[1];
-                  SPB_list_x.push_back(SBP_x) ;
-                  SPB_list_y.push_back (SPB_y);
+                  SBP_list_x.push_back(SBP_x) ;
+                  SBP_list_y.push_back (SBP_y);
                 }
 
         // transform all 5 basepoints from map space coordinates to car space coordinates (or the last point of the previous path )
 
               double shift2_ref_x,shift2_ref_y;  //shift to car (or last_previous_path point ) referential  
 
-              for(int i=0; i<SPB_list_x.size();i++)// transform each base point from global  to local coordinates (ref)
+              for(int i=0; i<SBP_list_x.size();i++)// transform each base point from global  to local coordinates (ref)
                 {
                   // translation to reference  origin (car or last previous point )
-                  shift2_ref_x=SPB_list_x[i]- ref_x;
-                  shift2_ref_y=SPB_list_y[i]- ref_y;   
+                  shift2_ref_x=SBP_list_x[i]- ref_x;
+                  shift2_ref_y=SBP_list_y[i]- ref_y;   
 
                   // rotation of the axis to match the car or last 2 points direction 
-                 SPB_list_x[i]= (shift2_ref_x* cos(ref_yaw))+ (shift2_ref_y*sin(ref_yaw));
-                 SPB_list_y[i]= (-shift2_ref_x* sin(ref_yaw))+ (shift2_ref_y*cos(ref_yaw));  
+                 SBP_list_x[i]= (shift2_ref_x* cos(ref_yaw))+ (shift2_ref_y*sin(ref_yaw));
+                 SBP_list_y[i]= (-shift2_ref_x* sin(ref_yaw))+ (shift2_ref_y*cos(ref_yaw));  
                 }
 
         // create a Spline from these 5 basepoints 
 
                 tk::spline s;
-                s.set_points(SPB_list_x,SPB_list_y);
+                s.set_points(SBP_list_x,SBP_list_y);
      
         /* 
         calculate the number (ratio) of trajectory segments to drive a given distance at a given speed along the Spline.
