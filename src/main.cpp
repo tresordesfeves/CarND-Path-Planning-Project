@@ -108,9 +108,11 @@ double ref_vel = 49.5;  /*(in mph)
           // Sensor Fusion Data, a list of all other cars on the same side 
           //   of the road.
           auto sensor_fusion = j[1]["sensor_fusion"];
+          json msgJson;
 
-// sensor fusion
 
+
+  //* detect the next car ahead in the same lane and slow down if too close
           if (remaining_path_ahead_size>0) // some of the previously calculated waypoints still left ahead 
             {
               car_s=end_path_s;// the car s value is projected to the end of previous path ahead ( anticipation)
@@ -118,10 +120,10 @@ double ref_vel = 49.5;  /*(in mph)
 
           double VHCLE_i_speed;// speed of an other vehicle i
           double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i    
-          double dist2_VHCLE_i;// longitudinal Frenet distance (approcimation) from ego to vehicle i 
+          double dist2_VHCLE_i;// longitudinal Frenet distance (approximation) from ego to vehicle i 
           float d_i; // vehicle i transversal Frenet coordinate
 
-          for(int i=0;sensor_fusion.size();i++)// checkall the other vehicles sensed 
+          for(int i=0;i<sensor_fusion.size();i++)// checkall the other vehicles sensed 
 
             {
                 d_i=sensor_fusion[i][6];
@@ -132,9 +134,9 @@ double ref_vel = 49.5;  /*(in mph)
 
                     VHCLE_i_s = sensor_fusion[i][5] ; //other vehicle s longitudinal coordinate as given by sensor
                     
-                  /*  ego car s position was antcipated at the end of the previous path ( see : car_s=end_path_s)
-                      other vehicles s position have to be antipated similarly 
-                  */
+                  //  ego car s position was antcipated at the end of the previous path ( see : car_s=end_path_s)
+                  //  other vehicles s position have to be antipated similarly 
+                  
                     VHCLE_i_s+=VHCLE_i_speed * 0.02 * remaining_path_ahead_size;// anticipation given that the ego car drives in 0.02 between each points 
 
                     dist2_VHCLE_i=VHCLE_i_s - car_s; // distance vehicle i to ego vehicle 
@@ -145,8 +147,7 @@ double ref_vel = 49.5;  /*(in mph)
                       } 
                    }            
               }
-
-          json msgJson;
+  //*/ end of detect the next car ahead and slow down
 
 
           //next_x_vals, next_y_vals : vectors of points that will sent to the simulator to drive on (trajectory ahead )
@@ -266,8 +267,6 @@ double ref_vel = 49.5;  /*(in mph)
                   next_x_vals.push_back(x_i_global);
                   next_y_vals.push_back(y_i_global);
                 }
-
-// to do the spline : on video youtube: https://youtu.be/7sI3VHFPP0w?t=1763
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
