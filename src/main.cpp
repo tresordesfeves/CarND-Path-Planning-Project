@@ -109,6 +109,40 @@ double ref_vel = 49.5;  /*(in mph)
           //   of the road.
           auto sensor_fusion = j[1]["sensor_fusion"];
 
+// sensor fusion
+
+          if (remaining_path_ahead_size>0) // some of the previously calculated waypoints still left ahead 
+            {
+              car_s=end_path_s;// the car s value is projected to the end of previous path ahead ( anticipation)
+            }
+
+          double VHCLE_i_speed;// speed of an other vehicle i
+          double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i
+          double dist2_VHCLE_i;// longitudinal Frenet distance (approcimation) from ego to vehicle i 
+
+          for(int i=0,sensor_fusion.size(),i++)// checkall the other vehicles sensed 
+
+            {
+                if  abs((lane*4)+2-sensor_fusion[i][6])<2 // check if other vehicle is in Ego car lane
+                  {
+                    VHCLE_i_speed=dist(0,0,sensor_fusion[i][3], sensor_fusion[i][4]); // other vehicle i speed  
+
+                    VHCLE_i_s = sensor_fusion[i][5] ; //other vehicle s longitudinal coordinate as given by sensor
+                    
+                  /*  ego car s position was antcipated at the end of the previous path ( see : car_s=end_path_s)
+                      other vehicles s position have to be antipated similarly 
+                  */
+                    VHCLE_i_s+=VHCLE_i_speed * 0.02 * remaining_path_ahead_size // anticipation given that the ego car drives in 0.02 between each points 
+
+                    dist2_VHCLE_i=VHCLE_i_s - car_s; // distance vehicle i to ego vehicle 
+
+                    if ((dist2_VHCLE_i>=0)  &&  (dist2_VHCLE_i<30)) // only check if the vehicles ahead of the ego car are at less than 30 meters 
+                      {
+                        ref_vel=29.5;// reduce speed when vehicle ahead is too close
+                      } 
+                   }            
+              }
+
           json msgJson;
 
 
