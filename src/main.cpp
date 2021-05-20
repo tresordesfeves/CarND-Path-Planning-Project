@@ -117,13 +117,16 @@ double ref_vel = 49.5;  /*(in mph)
             }
 
           double VHCLE_i_speed;// speed of an other vehicle i
-          double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i
+          double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i    
           double dist2_VHCLE_i;// longitudinal Frenet distance (approcimation) from ego to vehicle i 
+          float d_i; // vehicle i transversal Frenet coordinate
 
-          for(int i=0,sensor_fusion.size(),i++)// checkall the other vehicles sensed 
+          for(int i=0;sensor_fusion.size();i++)// checkall the other vehicles sensed 
 
             {
-                if  abs((lane*4)+2-sensor_fusion[i][6])<2 // check if other vehicle is in Ego car lane
+                d_i=sensor_fusion[i][6];
+
+                if  (fabs((lane*4)+2-d_i)<2) // check if other vehicle is in Ego car's lane
                   {
                     VHCLE_i_speed=dist(0,0,sensor_fusion[i][3], sensor_fusion[i][4]); // other vehicle i speed  
 
@@ -132,7 +135,7 @@ double ref_vel = 49.5;  /*(in mph)
                   /*  ego car s position was antcipated at the end of the previous path ( see : car_s=end_path_s)
                       other vehicles s position have to be antipated similarly 
                   */
-                    VHCLE_i_s+=VHCLE_i_speed * 0.02 * remaining_path_ahead_size // anticipation given that the ego car drives in 0.02 between each points 
+                    VHCLE_i_s+=VHCLE_i_speed * 0.02 * remaining_path_ahead_size;// anticipation given that the ego car drives in 0.02 between each points 
 
                     dist2_VHCLE_i=VHCLE_i_s - car_s; // distance vehicle i to ego vehicle 
 
