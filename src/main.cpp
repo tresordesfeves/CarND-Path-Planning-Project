@@ -23,6 +23,8 @@ using nlohmann::json;
 using std::string;
 using std::vector;
 using std::min;
+using std::max;
+
 
 int main() {
   uWS::Hub h;
@@ -154,7 +156,9 @@ double ref_vel = 0.224;  /*(in mph)
 
             if (tail_gating)
               {
-                ref_vel-=0.224; 
+                //ref_vel-=0.224; 
+                lane=max(0, lane-1);
+                
               }
             else
               {
