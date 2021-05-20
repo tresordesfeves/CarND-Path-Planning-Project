@@ -22,6 +22,7 @@
 using nlohmann::json;
 using std::string;
 using std::vector;
+using std::min;
 
 int main() {
   uWS::Hub h;
@@ -62,7 +63,7 @@ int main() {
 
 int lane =1; //ego car's lane : waypoints will be added ahead on this lane
 
-double ref_vel = 49.5;  /*(in mph)
+double ref_vel = 0.224;  /*(in mph)
                           the ego vehicle velocity : 
                           the car moves from one waypoint to the nextone at fixed time intervals (0.02 s) therefore
                           the spacing of the way points to generate is conditioned by this velocity
@@ -122,6 +123,9 @@ double ref_vel = 49.5;  /*(in mph)
           double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i    
           double dist2_VHCLE_i;// longitudinal Frenet distance (approximation) from ego to vehicle i 
           float d_i; // vehicle i transversal Frenet coordinate
+          bool tail_gating=false;// Are we tailgating ??
+
+
 
           for(int i=0;i<sensor_fusion.size();i++)// checkall the other vehicles sensed 
 
@@ -143,10 +147,20 @@ double ref_vel = 49.5;  /*(in mph)
 
                     if ((dist2_VHCLE_i>=0)  &&  (dist2_VHCLE_i<30)) // only check if the vehicles ahead of the ego car are at less than 30 meters 
                       {
-                        ref_vel=29.5;// reduce speed when vehicle ahead is too close
+                        tail_gating=true;// reduce speed when vehicle ahead is too close
                       } 
                    }            
               }
+
+            if (tail_gating)
+              {
+                ref_vel-=0.224; 
+              }
+            else
+              {
+                ref_vel+=min(49.5 -ref_vel,0.224);
+              }
+
   //*/ end of detect the next car ahead and slow down
 
 
@@ -267,6 +281,7 @@ double ref_vel = 49.5;  /*(in mph)
                   next_x_vals.push_back(x_i_global);
                   next_y_vals.push_back(y_i_global);
                 }
+
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
