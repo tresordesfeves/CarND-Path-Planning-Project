@@ -3,6 +3,9 @@
 //   cmake .. && make to compile your project
 //  ./path_planning to run your code
 
+//  cd CarND-Path-Planning-Project/build cmake .. && make
+//  cd CarND-Path-Planning-Project/build ./path_planning
+
 
 
 #include <uWS/uWS.h>
@@ -127,8 +130,13 @@ double ref_vel = 0.224;  /*(in mph)
           float d_i; // vehicle i transversal Frenet coordinate
           bool tail_gating=false;// Are we tailgating ??
 
+//-----------------------
+
+tail_gating= clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s);
 
 
+//-----------------------
+/*
           for(int i=0;i<sensor_fusion.size();i++)// checkall the other vehicles sensed 
 
             {
@@ -153,7 +161,7 @@ double ref_vel = 0.224;  /*(in mph)
                       } 
                    }            
               }
-
+*/
             if (tail_gating)
               {
                 //ref_vel-=0.224; 
