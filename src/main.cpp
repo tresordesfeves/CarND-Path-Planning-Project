@@ -157,7 +157,11 @@ double ref_vel = 0.224;  /*(in mph)
             if (tail_gating)
               {
                 //ref_vel-=0.224; 
-                lane=max(0, lane-1);
+                //lane=max(0, lane-1);
+                if (lane>0)
+                  {lane-=1;}
+                else
+                  {lane+=1;}
                 
               }
             else
