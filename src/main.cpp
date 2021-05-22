@@ -132,7 +132,7 @@ double ref_vel = 0.224;  /*(in mph)
 
 //-----------------------
 
-tail_gating= clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s);
+tail_gating= front_clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s);
 
 
 //-----------------------
@@ -169,7 +169,9 @@ tail_gating= clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s);
                 if (lane>0)
                   {lane-=1;}
                 else
-                  {lane+=1;}
+                  //{if (lane<2)
+                      {lane+=1;}
+                  //}
                 
               }
             else
