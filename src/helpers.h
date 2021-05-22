@@ -167,7 +167,7 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
   return {x,y};
   }
 
-bool rear_clearance(vector <vector <double>> sensor_fusion,int intended_lane, int remaining_path_ahead_size, double car_s)
+bool side_gap_clearance(vector <vector <double>> sensor_fusion,int intended_lane, int remaining_path_ahead_size, double car_s)
   { 
     double VHCLE_i_speed;// speed of an other vehicle i
     double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i    
@@ -193,15 +193,17 @@ bool rear_clearance(vector <vector <double>> sensor_fusion,int intended_lane, in
               dist2_VHCLE_i=VHCLE_i_s - car_s; // distance vehicle i to ego vehicle   
 
               if (fabs(dist2_VHCLE_i)<30) // wheter the side vehicle is ahead or behind too risky
+               {
                   unsafe_change=true;// reduce speed when vehicle ahead is too close
-                } 
+              }
+                
              }            
           }
 
-          return(tail_gating);
+          return(unsafe_change);
   }
 
-bool front_clearance(vector <vector <double>> sensor_fusion,int lane, int remaining_path_ahead_size, double car_s)
+bool front_clearance(vector <vector <double>> sensor_fusion,int lane, int remaining_path_ahead_size, double car_s, float warning_distance)
   { 
     double VHCLE_i_speed;// speed of an other vehicle i
     double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i    
@@ -226,7 +228,7 @@ bool front_clearance(vector <vector <double>> sensor_fusion,int lane, int remain
 
               dist2_VHCLE_i=VHCLE_i_s - car_s; // distance vehicle i to ego vehicle   
 
-              if ((dist2_VHCLE_i>=0)  &&  (dist2_VHCLE_i<30)) // only check if the vehicles ahead of the ego car are at less than 30 meters 
+              if ((dist2_VHCLE_i>=0)  &&  (dist2_VHCLE_i<warning_distance)) // only check if the vehicles ahead of the ego car are at less than 30 meters 
                 {
                   tail_gating=true;// reduce speed when vehicle ahead is too close
                 } 

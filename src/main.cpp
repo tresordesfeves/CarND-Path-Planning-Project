@@ -124,63 +124,71 @@ double ref_vel = 0.224;  /*(in mph)
               car_s=end_path_s;// the car s value is projected to the end of previous path ahead ( anticipation)
             }
 
-          double VHCLE_i_speed;// speed of an other vehicle i
-          double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i    
-          double dist2_VHCLE_i;// longitudinal Frenet distance (approximation) from ego to vehicle i 
-          float d_i; // vehicle i transversal Frenet coordinate
+          //double VHCLE_i_speed;// speed of an other vehicle i
+          //double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i    
+          //double dist2_VHCLE_i;// longitudinal Frenet distance (approximation) from ego to vehicle i 
+          //float d_i; // vehicle i transversal Frenet coordinate
           bool tail_gating=false;// Are we tailgating ??
+          bool lane_invasion= false; //is our lane suddenly invaded at less then "lane_invasion_distance"
+          bool unsafe_change= false;
+          int intended_lane;
+          float slow_vhcle_distance =30; // detection of a slow vehicle ahead
+          float lane_invasion_distance = 15; // lane suddenly invaded 
 
 //-----------------------
 
-tail_gating= front_clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s);
+lane_invasion= front_clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s , lane_invasion_distance);
+tail_gating= front_clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s , slow_vhcle_distance);
 
 
-//-----------------------
-/*
-          for(int i=0;i<sensor_fusion.size();i++)// checkall the other vehicles sensed 
+   //*/ lane invasion handling
+    if (lane_invasion)
+      {
+        //decelerate
+        ref_vel-=0.224; 
 
-            {
-                d_i=sensor_fusion[i][6];
+      }
+   //*/ end of lane invasion handling
 
-                if  (fabs((lane*4)+2-d_i)<2) // check if other vehicle is in Ego car's lane
-                  {
-                    VHCLE_i_speed=dist(0,0,sensor_fusion[i][3], sensor_fusion[i][4]); // other vehicle i speed  
+    else 
 
-                    VHCLE_i_s = sensor_fusion[i][5] ; //other vehicle s longitudinal coordinate as given by sensor
-                    
-                  //  ego car s position was antcipated at the end of the previous path ( see : car_s=end_path_s)
-                  //  other vehicles s position have to be antipated similarly 
-                  
-                    VHCLE_i_s+=VHCLE_i_speed * 0.02 * remaining_path_ahead_size;// anticipation given that the ego car drives in 0.02 between each points 
-
-                    dist2_VHCLE_i=VHCLE_i_s - car_s; // distance vehicle i to ego vehicle 
-
-                    if ((dist2_VHCLE_i>=0)  &&  (dist2_VHCLE_i<30)) // only check if the vehicles ahead of the ego car are at less than 30 meters 
-                      {
-                        tail_gating=true;// reduce speed when vehicle ahead is too close
-                      } 
-                   }            
-              }
-*/
-            if (tail_gating)
+      {
+        //**/ slow vehicle ahead handling  
+        if (tail_gating)
+          {
+            //ref_vel-=0.224; 
+            //lane=max(0, lane-1);
+            if (lane>0)
               {
-                //ref_vel-=0.224; 
-                //lane=max(0, lane-1);
-                if (lane>0)
-                  {lane-=1;}
-                else
-                  //{if (lane<2)
-                      {lane+=1;}
-                  //}
-                
+                //lane-=1; 
+                intended_lane=lane-1;
+
+              }
+            else
+              //{if (lane<2)
+                  {
+                    //lane+=1;
+                    intended_lane= lane+1;
+                  }
+              //}
+            unsafe_change=side_gap_clearance(sensor_fusion, intended_lane, remaining_path_ahead_size,  car_s);
+            if (unsafe_change)
+              {
+                ref_vel-=0.224;// slow down
               }
             else
               {
-                ref_vel+=min(49.5 -ref_vel,0.224);
+                lane=intended_lane;//change lane
               }
 
-  //*/ end of detect the next car ahead and slow down
+        //**/ end of slow vehicle ahead handling  
+          }
+        else
+          {
+            ref_vel+=min(49.5 -ref_vel,0.224);
+          }
 
+      }
 
           //next_x_vals, next_y_vals : vectors of points that will sent to the simulator to drive on (trajectory ahead )
           
