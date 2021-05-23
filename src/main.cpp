@@ -134,57 +134,41 @@ double ref_vel = 0.224;  /*(in mph)
           int intended_lane;
           float slow_vhcle_distance =30; // detection of a slow vehicle ahead
           float lane_invasion_distance = 15; // lane suddenly invaded 
-
+          double invader_d;
 //-----------------------
 
-lane_invasion= front_clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s , lane_invasion_distance);
+lane_invasion= front_clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s , lane_invasion_distance, &invader_d);
 tail_gating= front_clearance(sensor_fusion, lane, remaining_path_ahead_size,  car_s , slow_vhcle_distance);
 
 
    //*/ lane invasion handling
     if (lane_invasion)
       {
-        //decelerate
-        ref_vel-=0.224; 
 
+        intended_lane=lane+copysign( 1,invader_d-car_d);// intend tp mimick the invading car sway to avaoid collision
+        lane=safe_lane_change_check(sensor_fusion, lane, intended_lane, remaining_path_ahead_size,  car_s);
+        
+        if (lane = intended_lane) // lane change was not possible (to avoid collision with invader or no safe side gap or already in lane 2)
+          {ref_vel-=0.224; }//decelerate
       }
    //*/ end of lane invasion handling
 
     else 
 
       {
-        //**/ slow vehicle ahead handling  
-        if (tail_gating)
+        
+        if (tail_gating) 
+
+          //**/ slow vehicle ahead handling  
           {
-            //ref_vel-=0.224; 
-            //lane=max(0, lane-1);
-            if (lane>0)
-              {
-                //lane-=1; 
-                intended_lane=lane-1;
+            
 
-              }
-            else
-              //{if (lane<2)
-                  {
-                    //lane+=1;
-                    intended_lane= lane+1;
-                  }
-              //}
-            unsafe_change=side_gap_clearance(sensor_fusion, intended_lane, remaining_path_ahead_size,  car_s);
-            if (unsafe_change)
-              {
-                ref_vel-=0.224;// slow down
-              }
-            else
-              {
-                lane=intended_lane;//change lane
-              }
-
-        //**/ end of slow vehicle ahead handling  
           }
+          //**/ end of slow vehicle ahead handling  
+
         else
           {
+            // cruise control on 
             ref_vel+=min(49.5 -ref_vel,0.224);
           }
 

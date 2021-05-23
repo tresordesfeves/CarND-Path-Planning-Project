@@ -167,6 +167,55 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
   return {x,y};
   }
 
+int safe_lane_change_check(vector <vector <double>> sensor_fusion,int lane, int intended_lane, int remaining_path_ahead_size, double car_s)
+  { 
+    double VHCLE_i_speed;// speed of an other vehicle i
+    double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i    
+    double dist2_VHCLE_i;// longitudinal Frenet distance (approximation) from ego to vehicle i 
+    float d_i; // vehicle i transversal Frenet coordinate
+    bool unsafe_change=false;// Are we tailgating ??
+
+    // check if the intended is not off-road
+
+    if (intended_lane>2 or intended_lane<0)
+      {
+        return(lane);
+      }
+
+    else 
+      {
+
+      for(int i=0;i<sensor_fusion.size();i++)// checkall the other vehicles sensed 
+
+        {
+          d_i=sensor_fusion[i][6];  
+
+          if  (fabs((intended_lane*4)+2-d_i)<2) // check if other vehicle is in Ego car's lane
+            {
+              VHCLE_i_speed=dist(0,0,sensor_fusion[i][3], sensor_fusion[i][4]); // other vehicle i speed    
+
+              VHCLE_i_s = sensor_fusion[i][5] ; //other vehicle s longitudinal coordinate as given by sensor
+              
+            //  ego car s position was antcipated at the end of the previous path ( see : car_s=end_path_s)
+            //  other vehicles s position have to be antipated similarly 
+            
+              VHCLE_i_s+=VHCLE_i_speed * 0.02 * remaining_path_ahead_size;// anticipation given that the ego car drives in 0.02 between each points   
+
+              dist2_VHCLE_i=VHCLE_i_s - car_s; // distance vehicle i to ego vehicle   
+
+              if (fabs(dist2_VHCLE_i)<30) // wheter the side vehicle is ahead or behind too risky
+                {
+                  return(lane);// do not change lane
+                }
+             }            
+          }
+
+          return(intended_lane);
+        }
+  }
+
+
+
 bool side_gap_clearance(vector <vector <double>> sensor_fusion,int intended_lane, int remaining_path_ahead_size, double car_s)
   { 
     double VHCLE_i_speed;// speed of an other vehicle i
@@ -203,7 +252,7 @@ bool side_gap_clearance(vector <vector <double>> sensor_fusion,int intended_lane
           return(unsafe_change);
   }
 
-bool front_clearance(vector <vector <double>> sensor_fusion,int lane, int remaining_path_ahead_size, double car_s, float warning_distance)
+bool front_clearance(vector <vector <double>> sensor_fusion,int lane, int remaining_path_ahead_size, double car_s, float warning_distance, double &invader_d)
   { 
     double VHCLE_i_speed;// speed of an other vehicle i
     double VHCLE_i_s; // Frenet "s" longitudinal s coordinate of vehicle i    
@@ -231,6 +280,8 @@ bool front_clearance(vector <vector <double>> sensor_fusion,int lane, int remain
               if ((dist2_VHCLE_i>=0)  &&  (dist2_VHCLE_i<warning_distance)) // only check if the vehicles ahead of the ego car are at less than 30 meters 
                 {
                   tail_gating=true;// reduce speed when vehicle ahead is too close
+
+                  invader_d=sensor_fusion[i][6];
                 } 
              }            
           }
