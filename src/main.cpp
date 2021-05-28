@@ -228,7 +228,7 @@ tail_gating= front_clearance(sensor_fusion, lane, remaining_path_ahead_size,  ca
 
         // done picking the two first base points for the Spline
 
-          // create  3 way points ahead 30 meters apart to anchor a Spline base discretization 
+          // create  3 base points ahead 30 meters apart to anchor a Spline base discretization 
           
               double spacer = 30; //space between each spline base points in Frenet coordinates
               int n_SBP=3;  // number of sparsed base waypoints
